@@ -62,6 +62,8 @@ def get_collection(collection_id, progress_hook=None) -> list:
         )
         collection = []
         total_items = search.num_found
+        if progress_hook:
+            progress_hook(0, total_items)
         for result in tqdm(
             search, desc=f"Fetching {collection_id}", total=search.num_found
         ):
