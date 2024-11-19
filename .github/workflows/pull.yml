@@ -1,0 +1,20 @@
+name: fetch origins
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  fetch:
+    name: fetch origin
+    runs-on: ubuntu-latest
+    steps:
+      - name: push to target repository
+        uses: TobKed/github-forks-sync-action@master
+        if: github.repository == 'saveweb/IA-collection-analyzer'
+        with:
+          github_token: ${{ secrets.TOKEN_PERSONAL }}
+          upstream_repository: saveweb/IA-collection-analyzer
+          target_repository: ist356/project-Ovler-Young
+          upstream_branch: main
+          target_branch: main
+          force: true
+          tags: true
