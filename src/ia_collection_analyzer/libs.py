@@ -47,7 +47,9 @@ def get_collection(collection_id) -> list:
             fields=["*"],
         )
         collection = []
-        for result in tqdm(search, desc=f"Fetching {collection_id}", total=search.num_found):
+        for result in tqdm(
+            search, desc=f"Fetching {collection_id}", total=search.num_found
+        ):
             collection.append(result)
             item_id = result["identifier"]
             item_cache_key = f"item/item_metadata_{item_id}"
