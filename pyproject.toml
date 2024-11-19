@@ -17,3 +17,8 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[dependency-groups]
+dev = [
+    "tox-pdm>=0.7.2",
+]
