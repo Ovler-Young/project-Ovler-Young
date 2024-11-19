@@ -1,0 +1,19 @@
+[project]
+name = "IA-collection-analyzer"
+version = "0.0.1"
+description = "Analyze Internet Archive Collections"
+authors = [
+    {name = "Chengyu Jin", email = "cjin@syr.edu"},
+]
+dependencies = ["streamlit>=1.40.1", "pytest>=8.3.3", "internetarchive>=5.0.4", "pandas>=2.2.3"]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
