@@ -55,7 +55,7 @@ def get_collection(collection_id) -> list:
             item_cache_key = f"item/item_metadata_{item_id}"
             item_cache_filename = get_cache_filename(item_cache_key)
             if not is_cache_valid(item_cache_filename, COLLECTION_TTL):
-                metadata = ia_session.get_item(item_id).metadata
+                metadata = result
                 with open(item_cache_filename, "w") as cache_file:
                     json.dump(metadata, cache_file)
 
