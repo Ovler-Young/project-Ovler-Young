@@ -31,7 +31,10 @@ start_time = time.time()
 def progress_hook(add, total):
     global current_progress
     current_progress += add
-    progress = current_progress / total
+    if total == 0:
+        progress = 0
+    else:
+        progress = current_progress / total
     current_time = time.time()
     elapsed_time = current_time - start_time
 
