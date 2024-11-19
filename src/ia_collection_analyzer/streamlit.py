@@ -21,33 +21,39 @@ if not conform_button:
     st.stop()
 
 
-guide_text = st.markdown(
-    f"Getting metadata for collection: **{collection_id}**:"
-)
-
+guide_text = st.markdown(f"Getting metadata for collection: **{collection_id}**:")
+progress_text = st.markdown("Getting count and estimating time...")
 progress_bar = st.progress(0)
 current_progress = 0
 start_time = time.time()
-progress_text = st.markdown("getting count and estimating time...")
+
 
 def progress_hook(add, total):
     global current_progress
     current_progress += add
     progress = current_progress / total
+    current_time = time.time()
+    elapsed_time = current_time - start_time
+
     progress_bar.progress(progress)
-    progress_text.markdown(f"`{current_progress}/{total}` items processed, `{progress*100:.2f}%` done, elapsed time: `{time.time() - start_time:.2f}s`, ETA: `{((time.time() - start_time) / progress) * (1 - progress):.2f}s`")
+    last_progress_message = (
+        f"`{current_progress}/{total}` processed, "
+        f"`{progress*100:.2f}%` done, "
+        f"`{current_progress/(elapsed_time):.2f}`/s, "
+        f"Elapsed: `{elapsed_time:.2f}`s, "
+        f"ETA: `{' ∞ ' if progress == 0 else f'{(elapsed_time / progress) * (1 - progress):.2f}'}`s, "
+        f"Total: `{' ∞ ' if progress == 0 else f'{elapsed_time / progress:.2f}'}`s"
+    )
+    progress_text.markdown(last_progress_message)
+
 
 items = get_collection_items_metadata(collection_id, progress_hook)
 
 progress_bar.progress(100)
 
-data_transform_text = st.text(
-    "transforming data..."
-)
+data_transform_text = st.text("transforming data...")
 items_pd = pd.DataFrame(items)
-data_transform_text.text(
-    "cleaning data..."
-)
+data_transform_text.text("cleaning data...")
 # drop columns with 80%+ nan
 items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
 data_transform_text.text("Data transformation and cleaning complete!")
