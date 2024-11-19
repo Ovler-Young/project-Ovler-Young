@@ -44,7 +44,7 @@ def is_cache_valid(filename, ttl: float | int) -> bool:
     return (time.time() - file_mtime) < ttl
 
 
-def get_collection(collection_id) -> list:
+def get_collection(collection_id, progress_hook=None) -> list:
     cache_key = f"collection_{collection_id}"
     cache_filename = get_cache_filename(cache_key)
 
@@ -61,6 +61,7 @@ def get_collection(collection_id) -> list:
             fields=["*"],
         )
         collection = []
+        total_items = search.num_found
         for result in tqdm(
             search, desc=f"Fetching {collection_id}", total=search.num_found
         ):
@@ -72,6 +73,8 @@ def get_collection(collection_id) -> list:
                 metadata = result
                 with open(item_cache_filename, "w") as cache_file:
                     json.dump(metadata, cache_file)
+            if progress_hook:
+                progress_hook(1, total_items)
 
         with open(cache_filename, "w") as cache_file:
             json.dump(collection, cache_file, indent=2)
@@ -100,8 +103,8 @@ def get_item_metadata(item_id) -> dict:
         return metadata
 
 
-def get_collection_items_metadata(collection_id) -> list[dict]:
-    metadatas = get_collection(collection_id)
+def get_collection_items_metadata(collection_id, progress_hook=None) -> list[dict]:
+    metadatas = get_collection(collection_id, progress_hook)
     return metadatas
 
 
