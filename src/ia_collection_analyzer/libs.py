@@ -49,6 +49,13 @@ def get_collection(collection_id) -> list:
         collection = []
         for result in search:
             collection.append(result)
+            item_id = result["identifier"]
+            item_cache_key = f"item/item_metadata_{item_id}"
+            item_cache_filename = get_cache_filename(item_cache_key)
+            if not is_cache_valid(item_cache_filename, COLLECTION_TTL):
+                metadata = ia_session.get_item(item_id).metadata
+                with open(item_cache_filename, "w") as cache_file:
+                    json.dump(metadata, cache_file)
 
         with open(cache_filename, "w") as cache_file:
             json.dump(collection, cache_file, indent=2)
@@ -78,10 +85,7 @@ def get_item_metadata(item_id) -> dict:
 
 
 def get_collection_items_metadata(collection_id) -> list[dict]:
-    items = get_collection_items(collection_id)
-    metadatas = []
-    for item in tqdm(items):
-        metadatas.append(get_item_metadata(item))
+    metadatas = get_collection(collection_id)
     return metadatas
 
 
