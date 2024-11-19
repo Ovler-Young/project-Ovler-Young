@@ -4,7 +4,6 @@ import logging
 import os
 import time
 
-from tqdm import tqdm
 import internetarchive as ia
 
 
