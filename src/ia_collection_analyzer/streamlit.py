@@ -9,23 +9,30 @@ st.write(
     "This is a simple web app that analyzes the metadata of an Internet Archive collection."
 )
 
-
 # input the collection name
-collection_id = st.text_input("Enter the collection ID:", "speedydeletionwiki")
-
-conform_button = st.button("Conform")
+col1, col2 = st.columns([3, 1], vertical_alignment="bottom")
+with col1:
+    collection_id = st.text_input("Enter the collection ID:", "speedydeletionwiki")
+with col2:
+    conform_button = st.button("Conform")
 
 if not conform_button:
     st.stop()
 
 # display we're getting the metadata
-progress_text = st.text(f"Getting metadata for collection: {collection_id}, please wait...")
+progress_text = st.text(
+    f"Getting metadata for collection: {collection_id}, please wait..."
+)
 progress_bar = st.progress(0)
 items = get_collection_items_metadata(collection_id)
-progress_text.text(f"Getting metadata for collection: {collection_id}, transforming data...")
+progress_text.text(
+    f"Getting metadata for collection: {collection_id}, transforming data..."
+)
 progress_bar.progress(95)
 items_pd = pd.DataFrame(items)
-progress_text.text(f"Getting metadata for collection: {collection_id}, cleaning data...")
+progress_text.text(
+    f"Getting metadata for collection: {collection_id}, cleaning data..."
+)
 # drop columns with 80%+ nan
 items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
 progress_text.text(f"Getting metadata for collection: {collection_id}, done!")
