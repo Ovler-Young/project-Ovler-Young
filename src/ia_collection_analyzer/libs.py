@@ -4,6 +4,7 @@ import logging
 import os
 import time
 
+import requests
 import internetarchive as ia
 from tqdm import tqdm
 
@@ -16,6 +17,19 @@ COLLECTION_TTL = 24 * 3600
 
 logger = logging.getLogger(__name__)
 ia_session = ia.ArchiveSession()
+
+
+def print_request(r: requests.Response, *args, **kwargs):
+    for _r in r.history:
+        print("Resp (history): ", _r.request.method, _r.status_code, _r.reason, _r.url)
+    print(f"Resp: {r.request.method} {r.status_code} {r.reason} {r.url}")
+    if r.raw._connection and r.raw._connection.sock:
+        print(
+            f"Conn: {r.raw._connection.sock.getsockname()} -> {r.raw._connection.sock.getpeername()[0]}"
+        )
+
+
+ia_session.hooks["response"].append(print_request)
 
 
 def get_cache_filename(key) -> Path:
