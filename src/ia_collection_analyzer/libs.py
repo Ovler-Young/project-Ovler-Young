@@ -5,6 +5,7 @@ import os
 import time
 
 import internetarchive as ia
+from tqdm import tqdm
 
 
 CACHE_DIR = Path("cache")
@@ -46,7 +47,7 @@ def get_collection(collection_id) -> list:
             fields=["*"],
         )
         collection = []
-        for result in search:
+        for result in tqdm(search, desc=f"Fetching {collection_id}", total=search.num_found):
             collection.append(result)
             item_id = result["identifier"]
             item_cache_key = f"item/item_metadata_{item_id}"
