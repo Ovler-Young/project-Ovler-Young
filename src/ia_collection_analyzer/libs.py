@@ -41,7 +41,10 @@ def get_collection(collection_id) -> list:
     else:
         logger.info(f"Fetching collection {collection_id}")
         search = ia.Search(
-            ia_session, query="collection:" + collection_id, sorts=["addeddate desc"]
+            ia_session,
+            query="collection:" + collection_id,
+            sorts=["addeddate desc"],
+            fields=["*"],
         )
         collection = []
         for result in search:
