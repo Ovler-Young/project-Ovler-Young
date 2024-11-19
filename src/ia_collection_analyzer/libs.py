@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import time
+import tqdm
 
 import internetarchive as ia
 
@@ -42,7 +43,6 @@ def get_collection(collection_id) -> list:
         )
         collection = []
         for result in search:
-            print(result["identifier"], end="       \r")
             collection.append(result)
 
         with open(cache_filename, "w") as cache_file:
@@ -74,7 +74,10 @@ def get_item_metadata(item_id) -> dict:
 
 def get_collection_items_metadata(collection_id) -> list[dict]:
     items = get_collection_items(collection_id)
-    return [get_item_metadata(item) for item in items]
+    metadatas = []
+    for item in tqdm.tqdm(items):
+        metadatas.append(get_item_metadata(item))
+    return metadatas
 
 
 if __name__ == "__main__":
