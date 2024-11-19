@@ -3,13 +3,15 @@ import json
 import logging
 import os
 import time
-import tqdm
 
+from tqdm import tqdm
 import internetarchive as ia
 
 
 CACHE_DIR = Path("cache")
 CACHE_DIR.mkdir(exist_ok=True)
+ITEM_CACHE_DIR = CACHE_DIR / "item"
+ITEM_CACHE_DIR.mkdir(exist_ok=True)
 COLLECTION_TTL = 24 * 3600
 
 logger = logging.getLogger(__name__)
@@ -57,7 +59,7 @@ def get_collection_items(collection_id) -> list:
 
 
 def get_item_metadata(item_id) -> dict:
-    cache_key = f"item_metadata_{item_id}"
+    cache_key = f"item/item_metadata_{item_id}"
     cache_filename = get_cache_filename(cache_key)
 
     if os.path.exists(cache_filename):
@@ -75,7 +77,7 @@ def get_item_metadata(item_id) -> dict:
 def get_collection_items_metadata(collection_id) -> list[dict]:
     items = get_collection_items(collection_id)
     metadatas = []
-    for item in tqdm.tqdm(items):
+    for item in tqdm(items):
         metadatas.append(get_item_metadata(item))
     return metadatas
 
