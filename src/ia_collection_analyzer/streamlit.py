@@ -26,6 +26,8 @@ if "items_pd" not in st.session_state:
     st.session_state.items_pd = None
 if "selected_columns" not in st.session_state:
     st.session_state.selected_columns = []
+if "filtered_pd" not in st.session_state:
+    st.session_state.filtered_pd = None
 
 # input the collection name
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
@@ -46,7 +48,9 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
     items = fetch_metadata(collection_id)
     items_pd = pd.DataFrame(items)
     if items_pd.empty:
-        st.error("Failed to fetch metadata for the collection. Please check the collection ID.")
+        st.error(
+            "Failed to fetch metadata for the collection. Please check the collection ID."
+        )
         st.stop()
 
     data_transform_text = st.text("cleaning data...")
@@ -90,10 +94,24 @@ st.write("Select additional columns you want to analyze:")
 seleactable_columns = [col for col in items_pd.columns if col not in REQUIRED_METADATA]
 
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
-selected_columns = st.multiselect("Select columns:", seleactable_columns, default=st.session_state.selected_columns)
+selected_columns = st.multiselect(
+    "Select columns:", seleactable_columns, default=st.session_state.selected_columns
+)
 
-filtered_pd = items_pd[selected_columns+REQUIRED_METADATA]
-filtered_pd = filtered_pd.dropna(axis=0, how="any")
+# Update the filtering code to use cache
+if (
+    st.session_state.filtered_pd is None
+    or selected_columns != st.session_state.selected_columns
+):
+    filtered_pd = items_pd[selected_columns + REQUIRED_METADATA]
+    filtered_pd = filtered_pd.dropna(axis=0, how="any")
 
+    # Cache the filtered dataframe and selected columns
+    st.session_state.filtered_pd = filtered_pd
+    st.session_state.selected_columns = selected_columns
+else:
+    filtered_pd = st.session_state.filtered_pd
+
+# Display preview (existing code)
 st.write("Preview of the selected columns:")
 st.write(filtered_pd.head(30))
