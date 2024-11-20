@@ -24,6 +24,8 @@ if "got_metadata" not in st.session_state:
     st.session_state.got_metadata = False
 if "items_pd" not in st.session_state:
     st.session_state.items_pd = None
+if "selected_columns" not in st.session_state:
+    st.session_state.selected_columns = []
 
 # input the collection name
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
