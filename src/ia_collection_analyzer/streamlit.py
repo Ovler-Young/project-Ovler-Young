@@ -42,6 +42,9 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
     )
     items = fetch_metadata(collection_id)
     items_pd = pd.DataFrame(items)
+    if items_pd.empty:
+        st.error("Failed to fetch metadata for the collection. Please check the collection ID.")
+        st.stop()
 
     data_transform_text = st.text("cleaning data...")
     # drop columns with 80%+ nan
