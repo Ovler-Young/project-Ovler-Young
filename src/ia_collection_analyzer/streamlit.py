@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from ia_collection_analyzer.iahelper import get_collection_items_metadata, calculate_metadata
+from ia_collection_analyzer.getmetadatas import fetch_metadata
 from ia_collection_analyzer.constdatas import REQUIRED_METADATA
-import time
 
 st.title("Internet Archive Collection Analyzer")
 
@@ -21,39 +20,8 @@ with col2:
 if not conform_button:
     st.stop()
 
-
 guide_text = st.markdown(f"Getting metadata for collection: **{collection_id}**:")
-progress_text = st.markdown("Getting count and estimating time...")
-progress_bar = st.progress(0)
-current_progress = 0
-start_time = time.time()
-
-
-def progress_hook(add, total):
-    global current_progress
-    current_progress += add
-    if total == 0:
-        progress = 0
-    else:
-        progress = current_progress / total
-    current_time = time.time()
-    elapsed_time = current_time - start_time
-
-    progress_bar.progress(progress)
-    last_progress_message = (
-        f"`{current_progress}/{total}` processed, "
-        f"`{progress*100:.2f}%` done, "
-        f"`{current_progress/(elapsed_time):.2f}`/s, "
-        f"Elapsed: `{elapsed_time:.2f}`s, "
-        f"ETA: `{' ∞ ' if progress == 0 else f'{(elapsed_time / progress) * (1 - progress):.2f}'}`s, "
-        f"Total: `{' ∞ ' if progress == 0 else f'{elapsed_time / progress:.2f}'}`s"
-    )
-    progress_text.markdown(last_progress_message)
-
-
-items = get_collection_items_metadata(collection_id, progress_hook)
-
-progress_bar.progress(100)
+items = fetch_metadata(collection_id)
 
 data_transform_text = st.text("transforming data...")
 items_pd = pd.DataFrame(items)
