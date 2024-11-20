@@ -120,3 +120,43 @@ else:
 # Display preview (existing code)
 st.write("Preview of the selected columns:")
 st.write(filtered_pd.head(30))
+
+# Plan to plot
+col1, col2, col3 = st.columns([3, 3, 1], vertical_alignment="bottom")
+with col1:
+    x_axis = st.selectbox("Select the x-axis:", selected_columns)
+with col2:
+    y_axis = st.selectbox("Select the y-axis:", selected_columns)
+with col3:
+    plot_button = st.button("Plot")
+
+if plot_button and x_axis != y_axis:
+    st.write("Plotting the data...")
+    st.write(f"X-axis: {x_axis}, Y-axis: {y_axis}")
+
+    # Create comprehensive aggregation table
+    all_metrics = (
+        filtered_pd.groupby(x_axis)[y_axis]
+        .agg(
+            [
+                ("Count", "count"),
+                ("Sum", "sum"),
+                ("Mean", "mean"),
+                ("Median", "median"),
+                ("Min", "min"),
+                ("Max", "max"),
+            ]
+        )
+        .reset_index()
+    )
+
+    # Display complete aggregated data
+    st.write("Complete aggregation metrics:")
+    # Create multi-line chart (excluding Count since it's often on different scale)
+    metrics_for_plot = all_metrics.drop(columns=["Count", "Sum", "Max"])
+    metrics_for_plot = metrics_for_plot.set_index(x_axis)
+
+    st.write("Multi-metric trend lines:")
+    st.line_chart(metrics_for_plot)
+
+    st.write(all_metrics)
