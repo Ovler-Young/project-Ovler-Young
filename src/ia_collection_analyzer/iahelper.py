@@ -3,20 +3,20 @@ import json
 import logging
 import os
 import time
+import hashlib
+import random
 
 import requests
 import internetarchive as ia
 from tqdm import tqdm
 from ia_collection_analyzer.constdatas import (
     CACHE_DIR,
-    ITEM_CACHE_DIR,
     COLLECTION_TTL,
     REQUIRED_METADATA,
 )
 
 
 CACHE_DIR.mkdir(exist_ok=True)
-ITEM_CACHE_DIR.mkdir(exist_ok=True)
 
 logger = logging.getLogger(__name__)
 ia_session = ia.ArchiveSession()
@@ -35,8 +35,10 @@ def print_request(r: requests.Response, *args, **kwargs):
 ia_session.hooks["response"].append(print_request)
 
 
-def get_cache_filename(key) -> Path:
-    return CACHE_DIR / f"{key}.json"
+def get_cache_filename(key: str = str(random.random() * random.random())) -> Path:
+    path = CACHE_DIR
+    key = hashlib.sha1(key.encode()).hexdigest()
+    return path / f"{key}.json"
 
 
 def is_cache_valid(filename, ttl: float | int) -> bool:
@@ -49,7 +51,7 @@ def is_cache_valid(filename, ttl: float | int) -> bool:
 
 def get_collection(collection_id, progress_hook=None) -> list:
     cache_key = f"collection_{collection_id}"
-    cache_filename = get_cache_filename(cache_key)
+    cache_filename = get_cache_filename(key=cache_key)
 
     if is_cache_valid(cache_filename, COLLECTION_TTL):
         logger.info(f"Using cache for {collection_id}")
@@ -71,7 +73,9 @@ def get_collection(collection_id, progress_hook=None) -> list:
             total_items = int(search.num_found)
         except TypeError:
             total_items = 0
-            print(f"Failed to get total items for {collection_id}: search.num_found={search.num_found}")
+            print(
+                f"Failed to get total items for {collection_id}: search.num_found={search.num_found}"
+            )
             return []
         if progress_hook:
             progress_hook(0, total_items)
@@ -79,13 +83,6 @@ def get_collection(collection_id, progress_hook=None) -> list:
             search, desc=f"Fetching {collection_id}", total=search.num_found
         ):
             collection.append(result)
-            item_id = result["identifier"]
-            item_cache_key = f"item/item_metadata_{item_id}"
-            item_cache_filename = get_cache_filename(item_cache_key)
-            if not is_cache_valid(item_cache_filename, COLLECTION_TTL):
-                metadata = result
-                with open(item_cache_filename, "w") as cache_file:
-                    json.dump(metadata, cache_file)
             if progress_hook:
                 progress_hook(1, total_items)
 
@@ -101,19 +98,8 @@ def get_collection_items(collection_id) -> list:
 
 
 def get_item_metadata(item_id) -> dict:
-    cache_key = f"item/item_metadata_{item_id}"
-    cache_filename = get_cache_filename(cache_key)
-
-    if os.path.exists(cache_filename):
-        with open(cache_filename, "r") as cache_file:
-            return json.load(cache_file)
-    else:
-        metadata = ia_session.get_item(item_id).metadata
-
-        with open(cache_filename, "w") as cache_file:
-            json.dump(metadata, cache_file)
-
-        return metadata
+    metadata = ia_session.get_item(item_id).metadata
+    return metadata
 
 
 def get_collection_items_metadata(collection_id, progress_hook=None) -> list[dict]:
