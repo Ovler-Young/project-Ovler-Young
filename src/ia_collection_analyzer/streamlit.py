@@ -33,7 +33,14 @@ if "filtered_pd" not in st.session_state:
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
 with col1:
     collection_id = st.text_input("Enter the collection ID:", "bilibili_videos")
-    collection_id = collection_id.strip().replace(" ", "_").replace('"', "").replace("'", "").replace("(", "").replace(")", "")
+    collection_id = (
+        collection_id.strip()
+        .replace(" ", "_")
+        .replace('"', "")
+        .replace("'", "")
+        .replace("(", "")
+        .replace(")", "")
+    )
 with col2:
     conform_button = st.button("Conform")
 
@@ -94,9 +101,7 @@ st.write("Select additional columns you want to analyze:")
 seleactable_columns = [col for col in items_pd.columns if col not in REQUIRED_METADATA]
 
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
-selected_columns = st.multiselect(
-    "Select columns:", seleactable_columns, default=st.session_state.selected_columns
-)
+selected_columns = st.multiselect("Select columns:", seleactable_columns, default=[])
 
 # Update the filtering code to use cache
 if (
