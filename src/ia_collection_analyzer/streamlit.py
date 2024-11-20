@@ -58,6 +58,9 @@ data_transform_text = st.text("cleaning data...")
 # drop columns with 80%+ nan
 items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
 items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
+# drop mediatype=collections
+items_pd = items_pd[items_pd["mediatype"] != "collection"]
+
 # drop columns with different types inner.
 # for col in items_pd.columns:
 #    items_pd[col] = items_pd[col].apply(lambda x: x if isinstance(x, type(items_pd[col][0])) else np.nan)
