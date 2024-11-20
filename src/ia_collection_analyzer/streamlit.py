@@ -10,6 +10,13 @@ st.write(
     "This is a simple web app that analyzes the metadata of an Internet Archive collection."
 )
 
+st.markdown(
+    "Here are some example / suggested collections to analyze:"
+    "\n - [`wikiteam`](https://archive.org/details/wikiteam): `~421,000` items. A Large collection of archived wikis. (Not suggested currently, as this have 14 years of history, some data may cause bugs of this program.)"
+    "\n - [`bilibili_videos`](https://archive.org/details/bilibili_videos): `~48,000` items. A collection of archived videos from an Chinese Youtube-like website [Bilibili](https://www.bilibili.com/). Archive tool can be found at [GitHub](https://github.com/saveweb/biliarchiver)."
+    "\n - [`bilibili_videos_sub_1`](https://archive.org/details/bilibili_videos_sub_1): `~20,000` items. A subset of the `bilibili_videos` collection."
+)
+
 # cache system
 if "collection_id" not in st.session_state:
     st.session_state.collection_id = "bilibili_videos"
