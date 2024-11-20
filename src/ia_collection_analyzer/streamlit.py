@@ -61,11 +61,11 @@ items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
 # drop columns with different types inner.
 # for col in items_pd.columns:
 #    items_pd[col] = items_pd[col].apply(lambda x: x if isinstance(x, type(items_pd[col][0])) else np.nan)
-# drop columns with only one unique value
-# items_pd = items_pd.dropna(axis=1, thresh=2)
 
 # calculate metadata
 data_transform_text.text("calculating metadata...")
+items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
+items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
 data_transform_text.text("Data transformation and cleaning complete!")
 
 st.write("The collection contains the following items:")
