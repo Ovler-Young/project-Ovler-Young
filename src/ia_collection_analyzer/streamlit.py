@@ -90,7 +90,7 @@ seleactable_columns = [col for col in items_pd.columns if col not in REQUIRED_ME
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
 selected_columns = st.multiselect("Select columns:", seleactable_columns, default=st.session_state.selected_columns)
 
-filtered_pd = items_pd[REQUIRED_METADATA + selected_columns]
+filtered_pd = items_pd[selected_columns+REQUIRED_METADATA]
 filtered_pd = filtered_pd.dropna(axis=0, how="any")
 
 st.write("Preview of the selected columns:")
