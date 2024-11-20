@@ -29,7 +29,7 @@ data_transform_text.text("cleaning data...")
 # drop columns with 80%+ nan
 items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
 # drop columns with different types inner.
-#for col in items_pd.columns:
+# for col in items_pd.columns:
 #    items_pd[col] = items_pd[col].apply(lambda x: x if isinstance(x, type(items_pd[col][0])) else np.nan)
 # drop columns with only one unique value
 # items_pd = items_pd.dropna(axis=1, thresh=2)
@@ -39,7 +39,7 @@ data_transform_text.text("calculating metadata...")
 data_transform_text.text("Data transformation and cleaning complete!")
 
 st.write("The collection contains the following items:")
-st.write(items_pd.head(10)) # display the first 10 rows of the dataframe
+st.write(items_pd.head(10))  # display the first 10 rows of the dataframe
 
 st.header("Selecting columns to analyze")
 st.write("Select additional columns you want to analyze:")
