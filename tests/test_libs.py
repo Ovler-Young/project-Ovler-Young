@@ -1,5 +1,5 @@
 import pytest
-from ia_collection_analyzer.libs import (
+from ia_collection_analyzer.iahelper import (
     get_collection_items,
     get_item_metadata,
     get_collection_items_metadata,

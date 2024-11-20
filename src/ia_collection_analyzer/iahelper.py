@@ -7,13 +7,11 @@ import time
 import requests
 import internetarchive as ia
 from tqdm import tqdm
+from ia_collection_analyzer.constdatas import CACHE_DIR, ITEM_CACHE_DIR, COLLECTION_TTL, REQUIRED_METADATA
 
 
-CACHE_DIR = Path("cache")
 CACHE_DIR.mkdir(exist_ok=True)
-ITEM_CACHE_DIR = CACHE_DIR / "item"
 ITEM_CACHE_DIR.mkdir(exist_ok=True)
-COLLECTION_TTL = 24 * 3600
 
 logger = logging.getLogger(__name__)
 ia_session = ia.ArchiveSession()
@@ -109,6 +107,28 @@ def get_collection_items_metadata(collection_id, progress_hook=None) -> list[dic
     metadatas = get_collection(collection_id, progress_hook)
     return metadatas
 
+
+def filter_metadata(metadata: dict, additional_keys: list[str] = []) -> dict | None:
+    # assert a list of things are here and in right formart
+    required_keys = REQUIRED_METADATA + additional_keys
+    for key in required_keys:
+        if key not in metadata:
+            return None
+    return metadata
+
+def calculate_metadata(metadata: dict, additional_keys: list[str] = []) -> dict | None:
+    metadata = filter_metadata(metadata, additional_keys)
+    if metadata is None:
+        return None
+    
+    # turn addeddate to addedyear
+    metadata["addedyear"] = metadata["addeddate"][:4]
+    metadata["addedmonth"] = metadata["addeddate"][5:7]
+    
+    metadata["publicyear"] = metadata["publicdate"][:4]
+    metadata["publicmonth"] = metadata["publicdate"][5:7]
+        
+    return metadata
 
 if __name__ == "__main__":
     collection_id = "speedydeletionwiki"
