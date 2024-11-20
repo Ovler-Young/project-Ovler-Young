@@ -29,6 +29,7 @@ if "items_pd" not in st.session_state:
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
 with col1:
     collection_id = st.text_input("Enter the collection ID:", "bilibili_videos")
+    collection_id = collection_id.strip().replace(" ", "_")
 with col2:
     conform_button = st.button("Conform")
 
