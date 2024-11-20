@@ -10,6 +10,14 @@ st.write(
     "This is a simple web app that analyzes the metadata of an Internet Archive collection."
 )
 
+# cache system
+if "collection_id" not in st.session_state:
+    st.session_state.collection_id = "bilibili_videos"
+if "got_metadata" not in st.session_state:
+    st.session_state.got_metadata = False
+if "items_pd" not in st.session_state:
+    st.session_state.items_pd = None
+
 # input the collection name
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
 with col1:
@@ -17,15 +25,29 @@ with col1:
 with col2:
     conform_button = st.button("Conform")
 
-if not conform_button:
+if not conform_button and not st.session_state.got_metadata:
     st.stop()
 
-guide_text = st.markdown(f"Getting metadata for collection: **{collection_id}**:")
-items = fetch_metadata(collection_id)
+# Check if we need to fetch new data
+if not st.session_state.got_metadata or collection_id != st.session_state.collection_id:
+    guide_text = st.markdown(
+        f"Getting fresh metadata for collection: **{collection_id}**"
+    )
+    items = fetch_metadata(collection_id)
+    items_pd = pd.DataFrame(items)
 
-data_transform_text = st.text("transforming data...")
-items_pd = pd.DataFrame(items)
-data_transform_text.text("cleaning data...")
+    # Update cache
+    st.session_state.collection_id = collection_id
+    st.session_state.items_pd = items_pd
+    st.session_state.got_metadata = True
+    st.session_state.selected_columns = []
+else:
+    guide_text = st.markdown(
+        f"Using cached metadata for collection: **{collection_id}**"
+    )
+    items_pd = st.session_state.items_pd
+
+data_transform_text = st.text("cleaning data...")
 # drop columns with 80%+ nan
 items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
 # drop columns with different types inner.
@@ -49,7 +71,6 @@ col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
 selected_columns = st.multiselect("Select columns:", seleactable_columns, default=[])
 
 filtered_pd = items_pd[REQUIRED_METADATA + selected_columns]
-
 
 st.write("Preview of the selected columns:")
 st.write(items_pd.head(10))
