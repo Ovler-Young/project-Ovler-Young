@@ -85,6 +85,10 @@ def get_collection(collection_id, progress_hook=None) -> list:
             collection.append(result)
             if progress_hook:
                 progress_hook(1, total_items)
+        
+        if len(collection) == 0:
+            print(f"Failed to get any items for {collection_id}")
+            return []
 
         with open(cache_filename, "w") as cache_file:
             json.dump(collection, cache_file, indent=2)
