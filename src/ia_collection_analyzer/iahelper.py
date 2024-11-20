@@ -69,9 +69,9 @@ def get_collection(collection_id, progress_hook=None) -> list:
         total_items = search.num_found
         try:
             total_items = int(search.num_found)
-        except ValueError:
+        except TypeError:
             total_items = 0
-            logger.error(f"Failed to get total items for {collection_id}: search.num_found={search.num_found}")
+            print(f"Failed to get total items for {collection_id}: search.num_found={search.num_found}")
             return []
         if progress_hook:
             progress_hook(0, total_items)
