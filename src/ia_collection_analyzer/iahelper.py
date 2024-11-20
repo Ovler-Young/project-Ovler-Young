@@ -50,6 +50,8 @@ def get_collection(collection_id, progress_hook=None) -> list:
         logger.info(f"Using cache for {collection_id}")
         with open(cache_filename, "r") as cache_file:
             collection = json.load(cache_file)
+            if progress_hook:
+                progress_hook(len(collection), len(collection))
     else:
         logger.info(f"Fetching collection {collection_id}")
         search = ia.Search(
