@@ -42,6 +42,23 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
     )
     items = fetch_metadata(collection_id)
     items_pd = pd.DataFrame(items)
+    
+    data_transform_text = st.text("cleaning data...")
+    # drop columns with 80%+ nan
+    items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
+    items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
+    # drop mediatype=collections
+    items_pd = items_pd[items_pd["mediatype"] != "collection"]
+
+    # drop columns with different types inner.
+    # for col in items_pd.columns:
+    #    items_pd[col] = items_pd[col].apply(lambda x: x if isinstance(x, type(items_pd[col][0])) else np.nan)
+
+    # calculate metadata
+    data_transform_text.text("calculating metadata...")
+    items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
+    items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
+    data_transform_text.text("Data transformation and cleaning complete!")
 
     # Update cache
     st.session_state.collection_id = collection_id
@@ -53,23 +70,6 @@ else:
         f"Using cached metadata for collection: **{collection_id}**"
     )
     items_pd = st.session_state.items_pd
-
-data_transform_text = st.text("cleaning data...")
-# drop columns with 80%+ nan
-items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
-items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
-# drop mediatype=collections
-items_pd = items_pd[items_pd["mediatype"] != "collection"]
-
-# drop columns with different types inner.
-# for col in items_pd.columns:
-#    items_pd[col] = items_pd[col].apply(lambda x: x if isinstance(x, type(items_pd[col][0])) else np.nan)
-
-# calculate metadata
-data_transform_text.text("calculating metadata...")
-items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
-items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
-data_transform_text.text("Data transformation and cleaning complete!")
 
 st.write("The collection contains the following items:")
 try:
