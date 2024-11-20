@@ -35,7 +35,7 @@ with col1:
 with col2:
     conform_button = st.button("Conform")
 
-if not conform_button and not st.session_state.got_metadata:
+if not conform_button and not st.session_state.got_metadata or collection_id == "":
     st.stop()
 
 # Check if we need to fetch new data
