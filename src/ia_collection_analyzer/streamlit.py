@@ -54,6 +54,7 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
         f"Getting fresh metadata for collection: **{collection_id}**"
     )
     items = fetch_metadata(collection_id)
+    data_transform_text = st.text("Transforming data...")
     items_pd = pd.DataFrame(items)
     if items_pd.empty:
         st.error(
@@ -61,7 +62,7 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
         )
         st.stop()
 
-    data_transform_text = st.text("cleaning data...")
+    data_transform_text.text("cleaning data...")
     # drop columns with 80%+ nan
     items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
     items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
@@ -77,6 +78,9 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
     data_transform_text.text("calculating metadata...")
     items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
     items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
+    if "year" not in items_pd.columns:
+        data_transform_text.text("adding year column...")
+        items_pd["year"] = items_pd["publicdate"].dt.year
     data_transform_text.text("Data transformation and cleaning complete!")
 
     # Update cache
