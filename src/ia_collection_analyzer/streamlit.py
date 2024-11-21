@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from ia_collection_analyzer.getmetadatas import fetch_metadata
 from ia_collection_analyzer.constdatas import REQUIRED_METADATA
+from ia_collection_analyzer.pdhelper import normalize_list_columns
 
 st.title("Internet Archive Collection Analyzer")
 
@@ -66,6 +67,7 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
     items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
     # drop mediatype=collections
     items_pd = items_pd[items_pd["mediatype"] != "collection"]
+    items_pd = normalize_list_columns(items_pd)
 
     # drop columns with different types inner.
     # for col in items_pd.columns:
