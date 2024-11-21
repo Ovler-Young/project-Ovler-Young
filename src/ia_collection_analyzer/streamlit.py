@@ -123,10 +123,11 @@ st.write(filtered_pd.head(30))
 
 # Plan to plot
 col1, col2, col3 = st.columns([3, 3, 1], vertical_alignment="bottom")
+plotable_columns = selected_columns + REQUIRED_METADATA
 with col1:
-    x_axis = st.selectbox("Select the x-axis:", selected_columns)
+    x_axis = st.selectbox("Select the x-axis:", plotable_columns, index=0)
 with col2:
-    y_axis = st.selectbox("Select the y-axis:", selected_columns)
+    y_axis = st.selectbox("Select the y-axis:", plotable_columns, index=1)
 with col3:
     plot_button = st.button("Plot")
 
