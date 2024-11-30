@@ -6,13 +6,15 @@ from ia_collection_analyzer.iahelper import get_collection_items_metadata
 
 
 def fetch_metadata(collection_id):
-    progress_message = st.markdown("Getting count and estimating time...")
+    progress_message_text = "Getting count and estimating time..."
+    progress_message = st.markdown(progress_message_text)
     progress_bar = st.progress(0)
     items_processed = 0
     start_time = time.time()
 
     def progress_hook(add, total):
         nonlocal items_processed
+        nonlocal progress_message_text
         items_processed += add
         progress = 0 if total == 0 else items_processed / total
         current_time = time.time()
@@ -28,8 +30,9 @@ def fetch_metadata(collection_id):
         )
         progress_message.markdown(last_progress_message)
         progress_bar.progress(progress)
+        progress_message_text = last_progress_message
 
     items = get_collection_items_metadata(collection_id, progress_hook)
     progress_bar.progress(100)
 
-    return items
+    return items, progress_message_text

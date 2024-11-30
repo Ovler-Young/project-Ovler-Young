@@ -25,6 +25,8 @@ if "got_metadata" not in st.session_state:
     st.session_state.got_metadata = False
 if "items_pd" not in st.session_state:
     st.session_state.items_pd = None
+if "progress_message" not in st.session_state:
+    st.session_state.progress_message = None
 if "selected_columns" not in st.session_state:
     st.session_state.selected_columns = []
 if "filtered_pd" not in st.session_state:
@@ -36,124 +38,150 @@ if "transformed_columns" not in st.session_state:
 if "original_values" not in st.session_state:
     st.session_state.original_values = {}
 
-
-# input the collection name
-col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
-with col1:
-    collection_id = st.text_input("Enter the collection ID:", "bilibili_videos")
-    collection_id = (
-        collection_id.strip()
-        .replace(" ", "_")
-        .replace('"', "")
-        .replace("'", "")
-        .replace("(", "")
-        .replace(")", "")
-    )
-with col2:
-    conform_button = st.button("Conform")
-
-if not conform_button and not st.session_state.got_metadata or collection_id == "":
-    st.stop()
-
-# Check if we need to fetch new data
-if not st.session_state.got_metadata or collection_id != st.session_state.collection_id:
-    guide_text = st.markdown(
-        f"Getting fresh metadata for collection: **{collection_id}**"
-    )
-    items = fetch_metadata(collection_id)
-    data_transform_text = st.text("Transforming data...")
-    items_pd = pd.DataFrame(items)
-    if items_pd.empty:
-        st.error(
-            "Failed to fetch metadata for the collection. Please check the collection ID."
+@st.fragment
+def collection_input():
+    """Fragment for collection ID input and metadata fetching"""    
+    # input the collection name
+    col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
+    with col1:
+        collection_id = st.text_input("Enter the collection ID:", "bilibili_videos")
+        collection_id = (
+            collection_id.strip()
+            .replace(" ", "_")
+            .replace('"', "")
+            .replace("'", "")
+            .replace("(", "")
+            .replace(")", "")
         )
+    with col2:
+        conform_button = st.button("Conform")
+
+    if not conform_button and not st.session_state.got_metadata or collection_id == "":
         st.stop()
 
-    data_transform_text.text("cleaning data...")
-    # drop columns with 80%+ nan
-    items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
-    items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
-    # drop mediatype=collections
-    items_pd = items_pd[items_pd["mediatype"] != "collection"]
-    items_pd = normalize_list_columns(items_pd)
+    if st.session_state.got_metadata and collection_id == st.session_state.collection_id:
+        items_pd = st.session_state.items_pd
+        # progress_message
+        progress_message = st.session_state.progress_message
+        st.markdown(progress_message)
+        st.write("The collection contains the following items:")
+        try:
+            st.write(items_pd.head(10))
+        except Exception as e:
+            st.markdown("Failed to display top 10 lines. Only first will be shown.")
+            st.write(items_pd.head(1))
+            st.write(e)
+        
+        return
 
-    # drop columns with different types inner.
-    # for col in items_pd.columns:
-    #    items_pd[col] = items_pd[col].apply(lambda x: x if isinstance(x, type(items_pd[col][0])) else np.nan)
+    # Check if we need to fetch new data
+    if not st.session_state.got_metadata or collection_id != st.session_state.collection_id:
+        st.markdown(
+            f"Getting fresh metadata for collection: **{collection_id}**"
+        )
+        items, progress_message = fetch_metadata(collection_id)
+        data_transform_text = st.text("Transforming data...")
+        items_pd = pd.DataFrame(items)
+        if items_pd.empty:
+            st.error(
+                "Failed to fetch metadata for the collection. Please check the collection ID."
+            )
+            st.stop()
 
-    # calculate metadata
-    data_transform_text.text("calculating metadata...")
-    items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
-    # items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
+        data_transform_text.text("cleaning data...")
+        # drop columns with 80%+ nan
+        items_pd = items_pd.dropna(axis=1, thresh=0.8 * len(items_pd))
+        items_pd = items_pd.dropna(axis=0, thresh=0.7 * len(items_pd.columns))
+        # drop mediatype=collections
+        items_pd = items_pd[items_pd["mediatype"] != "collection"]
+        items_pd = normalize_list_columns(items_pd)
 
-    # Use 'date' column if it exists, otherwise use 'addeddate'
-    date_column = "date" if "date" in items_pd.columns else "addeddate"
+        # drop columns with different types inner.
+        # for col in items_pd.columns:
+        #    items_pd[col] = items_pd[col].apply(lambda x: x if isinstance(x, type(items_pd[col][0])) else np.nan)
 
-    # year, month, and day should be recalculated
-    items_pd["year"] = pd.to_datetime(items_pd[date_column]).dt.year
-    items_pd["month"] = pd.to_datetime(items_pd[date_column]).dt.month
-    items_pd["day"] = pd.to_datetime(items_pd[date_column]).dt.day
-    data_transform_text.text("Data transformation and cleaning complete!")
+        # calculate metadata
+        data_transform_text.text("calculating metadata...")
+        items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
+        # items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
 
-    # Update cache
-    st.session_state.collection_id = collection_id
-    st.session_state.items_pd = items_pd
+        # Use 'date' column if it exists, otherwise use 'addeddate'
+        date_column = "date" if "date" in items_pd.columns else "addeddate"
+
+        # year, month, and day should be recalculated
+        items_pd["year"] = pd.to_datetime(items_pd[date_column]).dt.year
+        items_pd["month"] = pd.to_datetime(items_pd[date_column]).dt.month
+        items_pd["day"] = pd.to_datetime(items_pd[date_column]).dt.day
+        data_transform_text.text("Data transformation and cleaning complete!")
+
+        # Update cache
+        st.session_state.items_pd = items_pd
+    else:
+        st.markdown(
+            f"Using cached metadata for collection: **{collection_id}**"
+        )
+        items_pd = st.session_state.items_pd
+
     st.session_state.got_metadata = True
+    st.session_state.collection_id = collection_id
+    st.session_state.progress_message = progress_message
     st.session_state.selected_columns = []
-else:
-    guide_text = st.markdown(
-        f"Using cached metadata for collection: **{collection_id}**"
-    )
+    
+    st.rerun()
+
+@st.fragment
+def column_selector():
+    """Fragment for selecting columns to analyze"""
     items_pd = st.session_state.items_pd
+    
+    st.header("Selecting columns to analyze")
+    st.write("Select additional columns you want to analyze:")
+    seleactable_columns = [col for col in items_pd.columns if col not in REQUIRED_METADATA]
 
-st.write("The collection contains the following items:")
-try:
-    st.write(items_pd.head(10))
-except Exception as e:
-    st.markdown("Failed to display top 10 lines. Only first will be shown.")
-    st.write(items_pd.head(1))
-    st.write(e)
+    col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
+    selected_columns = st.multiselect("Select columns:", seleactable_columns, default=[])
 
-st.header("Selecting columns to analyze")
-st.write("Select additional columns you want to analyze:")
-seleactable_columns = [col for col in items_pd.columns if col not in REQUIRED_METADATA]
+    # Update the filtering code to use cache
+    if (
+        st.session_state.filtered_pd is None
+        or selected_columns != st.session_state.selected_columns
+    ):
+        filtered_pd = items_pd[selected_columns + REQUIRED_METADATA]
+        filtered_pd = filtered_pd.dropna(axis=0, how="any")
 
-col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
-selected_columns = st.multiselect("Select columns:", seleactable_columns, default=[])
+        # Cache the filtered dataframe and selected columns
+        st.session_state.filtered_pd = filtered_pd
+        st.session_state.selected_columns = selected_columns
+    else:
+        filtered_pd = st.session_state.filtered_pd
 
-# Update the filtering code to use cache
-if (
-    st.session_state.filtered_pd is None
-    or selected_columns != st.session_state.selected_columns
-):
-    filtered_pd = items_pd[selected_columns + REQUIRED_METADATA]
-    filtered_pd = filtered_pd.dropna(axis=0, how="any")
+    # Display preview (existing code)
+    st.write("Preview of the selected columns:")
+    st.write(filtered_pd.head(30))
 
-    # Cache the filtered dataframe and selected columns
-    st.session_state.filtered_pd = filtered_pd
-    st.session_state.selected_columns = selected_columns
-else:
+@st.fragment
+def transform_data():
+    """Fragment for transforming data"""
+    transform_needed = st.selectbox(
+        "Would you like to transform any columns before analysis?",
+        ["No", "Yes"],
+        index=0,
+        placeholder="No",
+    )
+    
+    if transform_needed == "No":
+        return
+
     filtered_pd = st.session_state.filtered_pd
-
-# Display preview (existing code)
-st.write("Preview of the selected columns:")
-st.write(filtered_pd.head(30))
-
-transform_needed = st.selectbox(
-    "Would you like to transform any columns before analysis?",
-    ["No", "Yes"],
-    index=0,
-    placeholder="No",
-)
-
-if transform_needed == "Yes":
+    
+    
     st.header("Transform Column")
     st.write("Transform an existing column with data transformations")
 
     col1, col2 = st.columns([2, 3], vertical_alignment="bottom")
 
     with col1:
-        source_col = st.selectbox("Select column to transform:", items_pd.columns)
+        source_col = st.selectbox("Select column to transform:", filtered_pd.columns)
 
     with col2:
         transform_type = st.selectbox(
@@ -198,13 +226,13 @@ if transform_needed == "Yes":
             min_count = st.number_input(
                 "Minimum count per value:", min_value=1, value=10
             )
-            threshold = min_count / len(items_pd)
+            threshold = min_count / len(filtered_pd)
         else:
             ratio_map = {"1%": 0.01, "0.1%": 0.001, "0.01%": 0.0001}
             threshold = ratio_map[threshold_type]
 
         # Value analysis with grouping
-        value_counts = items_pd[source_col].value_counts()
+        value_counts = filtered_pd[source_col].value_counts()
         total_count = value_counts.sum()
 
         small_values = value_counts[value_counts < threshold * total_count]
@@ -261,7 +289,7 @@ if transform_needed == "Yes":
                     )
                     st.session_state.used_values.update(selected_sources)
 
-                    st.rerun()
+                    st.rerun(scope="fragment")
 
         # Display mappings with counts
         if st.session_state.mapping_table:
@@ -277,7 +305,7 @@ if transform_needed == "Yes":
                 if st.button("Clear All Mappings", key="clear_mappings"):
                     st.session_state.mapping_table = []
                     st.session_state.used_values = set()
-                    st.rerun()
+                    st.rerun(scope="fragment")
             with col2:
                 if st.button("Revert Last Mapping", key="revert_mapping"):
                     # Remove values from used_values set
@@ -289,105 +317,129 @@ if transform_needed == "Yes":
 
                     # Remove last mapping
                     st.session_state.mapping_table.pop()
-                    st.rerun()
+                    st.rerun(scope="fragment")
 
     elif transform_type == "Numeric Bins":
         num_bins = st.number_input("Number of bins:", min_value=2, value=5)
 
     if st.button("Preview Transformation"):
         if transform_type == "Date Quarter":
-            new_col = pd.to_datetime(items_pd[source_col]).dt.quarter
+            new_col = pd.to_datetime(filtered_pd[source_col]).dt.quarter
         elif transform_type == "Date Week":
-            new_col = pd.to_datetime(items_pd[source_col]).dt.isocalendar().week
+            new_col = pd.to_datetime(filtered_pd[source_col]).dt.isocalendar().week
         elif transform_type == "String Prefix":
-            new_col = items_pd[source_col].str[:prefix_len]
+            new_col = filtered_pd[source_col].str[:prefix_len]
         elif transform_type == "Numeric Bins":
-            new_col = pd.qcut(items_pd[source_col], num_bins, labels=False)
+            new_col = pd.qcut(filtered_pd[source_col], num_bins, labels=False)
         elif transform_type == "Value Mapping":
-            new_col = items_pd[source_col].copy()
+            new_col = filtered_pd[source_col].copy()
             for mapping in st.session_state.mapping_table:
                 new_col = new_col.replace(mapping["sources"], mapping["target"])
 
         # Show preview
         preview_df = pd.DataFrame(
-            {"Original": items_pd[source_col], "Transformed": new_col}
+            {"Original": filtered_pd[source_col], "Transformed": new_col}
         )
         st.write("Preview of first 10 rows:")
         st.write(preview_df.head(10))
 
         if st.button("Apply Transformation"):
-            items_pd[source_col] = new_col
-
-# Plan to plot
-col1, col2, col3 = st.columns([3, 3, 1], vertical_alignment="bottom")
-plotable_columns = (
-    selected_columns + REQUIRED_METADATA + st.session_state.transformed_columns
-)
-with col1:
-    x_axis = st.selectbox("Select the x-axis:", plotable_columns, index=0)
-with col2:
-    y_axis = st.selectbox("Select the y-axis:", plotable_columns, index=1)
-with col3:
-    plot_button = st.button("Plot")
-
-if plot_button and x_axis != y_axis:
-    st.write("Plotting the data...")
-    st.write(f"X-axis: {x_axis}, Y-axis: {y_axis}")
-
-    # if y_axis is hashable , plot
-    if isinstance(filtered_pd[y_axis].iloc[0], (int, float, np.int64, np.float64)):
-        # Create comprehensive aggregation table
-        all_metrics = (
-            filtered_pd.groupby(x_axis)[y_axis]
-            .agg(
-                [
-                    ("Count", "count"),
-                    ("Sum", "sum"),
-                    ("Mean", "mean"),
-                    ("Median", "median"),
-                    ("Min", "min"),
-                    ("Max", "max"),
-                ]
+            filtered_pd[source_col] = new_col
+            st.session_state.filtered_pd = filtered_pd
+            st.session_state.transformed_columns.append(source_col)
+            st.session_state.transform_history.append(
+                {"source_col": source_col, "transform_type": transform_type}
             )
-            .reset_index()
-        )
+            st.session_state.original_values[source_col] = preview_df["Original"]
+            
+            st.rerun()
 
-        # Display complete aggregated data
-        st.write("Complete aggregation metrics:")
-        # Create multi-line chart (excluding Count since it's often on different scale)
-        metrics_for_plot = all_metrics.drop(columns=["Count", "Sum", "Max"])
-        metrics_for_plot = metrics_for_plot.set_index(x_axis)
+@st.fragment
+def plot_data():
+    """Fragment for data visualization"""
+    if not st.session_state.filtered_pd is not None:
+        return
+        
+    filtered_pd = st.session_state.filtered_pd
+    plotable_columns = st.session_state.selected_columns + REQUIRED_METADATA
+    
+    col1, col2, col3 = st.columns([3, 3, 1], vertical_alignment="bottom")
+    with col1:
+        x_axis = st.selectbox("Select the x-axis:", plotable_columns, index=0)
+    with col2:
+        y_axis = st.selectbox("Select the y-axis:", plotable_columns, index=1)
+    with col3:
+        plot_button = st.button("Plot")
 
-        st.write("Multi-metric trend lines:")
-        st.line_chart(metrics_for_plot)
+    if plot_button and x_axis != y_axis:
+        st.write("Plotting the data...")
+        st.write(f"X-axis: {x_axis}, Y-axis: {y_axis}")
 
-        st.write(all_metrics)
+        # if y_axis is hashable , plot
+        if isinstance(filtered_pd[y_axis].iloc[0], (int, float, np.int64, np.float64)):
+            # Create comprehensive aggregation table
+            all_metrics = (
+                filtered_pd.groupby(x_axis)[y_axis]
+                .agg(
+                    [
+                        ("Count", "count"),
+                        ("Sum", "sum"),
+                        ("Mean", "mean"),
+                        ("Median", "median"),
+                        ("Min", "min"),
+                        ("Max", "max"),
+                    ]
+                )
+                .reset_index()
+            )
 
-    # if y_axis is not numeric, count and plot
-    else:
-        st.write("Analyzing distribution across categories...")
+            # Display complete aggregated data
+            st.write("Complete aggregation metrics:")
+            # Create multi-line chart (excluding Count since it's often on different scale)
+            metrics_for_plot = all_metrics.drop(columns=["Count", "Sum", "Max"])
+            metrics_for_plot = metrics_for_plot.set_index(x_axis)
 
-        # Create mask for list and non-list values
-        is_list_mask = filtered_pd[y_axis].apply(lambda x: isinstance(x, list))
+            st.write("Multi-metric trend lines:")
+            st.line_chart(metrics_for_plot)
 
-        # Handle list values
-        list_data = filtered_pd[is_list_mask][[x_axis, y_axis]].copy()
-        exploded_list = list_data.explode(y_axis)
+            st.write(all_metrics)
 
-        # Handle non-list values
-        non_list_data = filtered_pd[~is_list_mask][[x_axis, y_axis]]
+        # if y_axis is not numeric, count and plot
+        else:
+            st.write("Analyzing distribution across categories...")
 
-        # Combine results efficiently
-        expanded_df = pd.concat([exploded_list, non_list_data])
+            # Create mask for list and non-list values
+            is_list_mask = filtered_pd[y_axis].apply(lambda x: isinstance(x, list))
 
-        # Create pivot table and plot
-        pivot_table = (
-            pd.crosstab(expanded_df[x_axis], expanded_df[y_axis], normalize="index")
-            * 100
-        )
+            # Handle list values
+            list_data = filtered_pd[is_list_mask][[x_axis, y_axis]].copy()
+            exploded_list = list_data.explode(y_axis)
 
-        st.bar_chart(pivot_table)
+            # Handle non-list values
+            non_list_data = filtered_pd[~is_list_mask][[x_axis, y_axis]]
 
-        st.write("Distribution counts:")
-        counts_df = pd.crosstab(expanded_df[x_axis], expanded_df[y_axis])
-        st.write(counts_df)
+            # Combine results efficiently
+            expanded_df = pd.concat([exploded_list, non_list_data])
+
+            # Create pivot table and plot
+            pivot_table = (
+                pd.crosstab(expanded_df[x_axis], expanded_df[y_axis], normalize="index")
+                * 100
+            )
+
+            st.bar_chart(pivot_table)
+
+            st.write("Distribution counts:")
+            counts_df = pd.crosstab(expanded_df[x_axis], expanded_df[y_axis])
+            st.write(counts_df)
+
+def main():
+    collection_input()
+    if st.session_state.got_metadata:
+        column_selector()
+        if st.session_state.filtered_pd is not None:
+            transform_data()
+            plot_data()
+
+if __name__ == "__main__":
+    main()
