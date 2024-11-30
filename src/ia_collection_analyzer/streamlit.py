@@ -268,9 +268,17 @@ def transform_data():
             available_targets = [
                 v for v in formatted_values if v not in st.session_state.used_values
             ]
+            available_targets.append("Custom value...")
+
             target_value = st.selectbox(
-                "Target Value:", available_targets, key="target_value", on_change=None
+                "Target Value:", available_targets, key="target_value"
             )
+
+            if target_value == "Custom value...":
+                custom_target = st.text_input(
+                    "Enter custom value:", key="custom_target"
+                )
+                target_value = f"{custom_target} (custom)"
 
         with col3:
             if st.button("Add", key="add_mapping"):
