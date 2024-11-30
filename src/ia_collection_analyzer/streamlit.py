@@ -29,6 +29,13 @@ if "selected_columns" not in st.session_state:
     st.session_state.selected_columns = []
 if "filtered_pd" not in st.session_state:
     st.session_state.filtered_pd = None
+if "transform_history" not in st.session_state:
+    st.session_state.transform_history = []
+if "transformed_columns" not in st.session_state:
+    st.session_state.transformed_columns = []
+if "original_values" not in st.session_state:
+    st.session_state.original_values = {}
+
 
 # input the collection name
 col1, col2 = st.columns([6, 1], vertical_alignment="bottom")
@@ -78,10 +85,10 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
     data_transform_text.text("calculating metadata...")
     items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
     # items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
-    
+
     # Use 'date' column if it exists, otherwise use 'addeddate'
     date_column = "date" if "date" in items_pd.columns else "addeddate"
-    
+
     # year, month, and day should be recalculated
     items_pd["year"] = pd.to_datetime(items_pd[date_column]).dt.year
     items_pd["month"] = pd.to_datetime(items_pd[date_column]).dt.month
@@ -132,9 +139,190 @@ else:
 st.write("Preview of the selected columns:")
 st.write(filtered_pd.head(30))
 
+transform_needed = st.selectbox(
+    "Would you like to transform any columns before analysis?",
+    ["No", "Yes"],
+    index=0,
+    placeholder="No",
+)
+
+if transform_needed == "Yes":
+    st.header("Transform Column")
+    st.write("Transform an existing column with data transformations")
+
+    col1, col2 = st.columns([2, 3], vertical_alignment="bottom")
+
+    with col1:
+        source_col = st.selectbox("Select column to transform:", items_pd.columns)
+
+    with col2:
+        transform_type = st.selectbox(
+            "Select transformation:",
+            [
+                "Value Mapping",
+                "Date Quarter",
+                "Date Week",
+                "String Prefix",
+                "Numeric Bins",
+            ],
+        )
+
+    # Add transformation params based on type
+    if transform_type == "String Prefix":
+        prefix_len = st.number_input("Prefix length:", min_value=1, value=10)
+
+    elif transform_type == "Value Mapping":
+        # Initialize storage
+        if "used_values" not in st.session_state:
+            st.session_state.used_values = set()
+        if "mapping_table" not in st.session_state:
+            st.session_state.mapping_table = []
+
+        # Threshold control
+        st.subheader("Grouping Settings")
+        threshold_type = st.selectbox(
+            "Group rare values threshold:",
+            ["1%", "0.1%", "0.01%", "Custom ratio", "Minimum count"],
+            index=1,
+        )
+
+        if threshold_type == "Custom ratio":
+            ratio = st.number_input(
+                "Enter ratio (e.g. 0.001 for 0.1%):",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.001,
+            )
+            threshold = ratio
+        elif threshold_type == "Minimum count":
+            min_count = st.number_input(
+                "Minimum count per value:", min_value=1, value=10
+            )
+            threshold = min_count / len(items_pd)
+        else:
+            ratio_map = {"1%": 0.01, "0.1%": 0.001, "0.01%": 0.0001}
+            threshold = ratio_map[threshold_type]
+
+        # Value analysis with grouping
+        value_counts = items_pd[source_col].value_counts()
+        total_count = value_counts.sum()
+
+        small_values = value_counts[value_counts < threshold * total_count]
+        main_values = value_counts[value_counts >= threshold * total_count]
+
+        if not small_values.empty:
+            main_values["Others (values < " + str(threshold * 100) + "%)"] = (
+                small_values.sum()
+            )
+
+        # Format values for display
+        formatted_values = [f"{v} ({c})" for v, c in main_values.items()]
+
+        # Mapping interface
+        st.subheader("Create Mapping")
+        # Column layout for selector controls
+        col1, col2, col3 = st.columns([5, 3, 1], vertical_alignment="bottom")
+        with col1:
+            available_values = [
+                v for v in formatted_values if v not in st.session_state.used_values
+            ]
+            selected_sources = st.multiselect(
+                "Source Values:",
+                available_values,
+                placeholder="Choose values to map",
+                key="source_values",
+                default=[available_values[0]] if available_values else [],
+                on_change=None,
+            )
+
+        with col2:
+            available_targets = [
+                v for v in formatted_values if v not in st.session_state.used_values
+            ]
+            target_value = st.selectbox(
+                "Target Value:", available_targets, key="target_value", on_change=None
+            )
+
+        with col3:
+            if st.button("Add", key="add_mapping"):
+                if target_value and selected_sources:
+                    source_values = [s.split(" (")[0] for s in selected_sources]
+                    target = target_value.split(" (")[0]
+
+                    # Calculate counts
+                    orig_count = sum(value_counts[s] for s in source_values)
+
+                    st.session_state.mapping_table.append(
+                        {
+                            "sources": source_values,
+                            "target": target,
+                            "count": orig_count,
+                        }
+                    )
+                    st.session_state.used_values.update(selected_sources)
+
+                    st.rerun()
+
+        # Display mappings with counts
+        if st.session_state.mapping_table:
+            st.write("Current Mappings:")
+            for mapping in st.session_state.mapping_table:
+                sources = " | ".join(mapping["sources"])
+                st.write(
+                    f"{sources} => {mapping['target']} (Count: {mapping['count']})"
+                )
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Clear All Mappings", key="clear_mappings"):
+                    st.session_state.mapping_table = []
+                    st.session_state.used_values = set()
+                    st.rerun()
+            with col2:
+                if st.button("Revert Last Mapping", key="revert_mapping"):
+                    # Remove values from used_values set
+                    last_mapping = st.session_state.mapping_table[-1]
+                    last_sources = [
+                        f"{s} ({value_counts[s]})" for s in last_mapping["sources"]
+                    ]
+                    st.session_state.used_values.difference_update(last_sources)
+
+                    # Remove last mapping
+                    st.session_state.mapping_table.pop()
+                    st.rerun()
+
+    elif transform_type == "Numeric Bins":
+        num_bins = st.number_input("Number of bins:", min_value=2, value=5)
+
+    if st.button("Preview Transformation"):
+        if transform_type == "Date Quarter":
+            new_col = pd.to_datetime(items_pd[source_col]).dt.quarter
+        elif transform_type == "Date Week":
+            new_col = pd.to_datetime(items_pd[source_col]).dt.isocalendar().week
+        elif transform_type == "String Prefix":
+            new_col = items_pd[source_col].str[:prefix_len]
+        elif transform_type == "Numeric Bins":
+            new_col = pd.qcut(items_pd[source_col], num_bins, labels=False)
+        elif transform_type == "Value Mapping":
+            new_col = items_pd[source_col].copy()
+            for mapping in st.session_state.mapping_table:
+                new_col = new_col.replace(mapping["sources"], mapping["target"])
+
+        # Show preview
+        preview_df = pd.DataFrame(
+            {"Original": items_pd[source_col], "Transformed": new_col}
+        )
+        st.write("Preview of first 10 rows:")
+        st.write(preview_df.head(10))
+
+        if st.button("Apply Transformation"):
+            items_pd[source_col] = new_col
+
 # Plan to plot
 col1, col2, col3 = st.columns([3, 3, 1], vertical_alignment="bottom")
-plotable_columns = selected_columns + REQUIRED_METADATA
+plotable_columns = (
+    selected_columns + REQUIRED_METADATA + st.session_state.transformed_columns
+)
 with col1:
     x_axis = st.selectbox("Select the x-axis:", plotable_columns, index=0)
 with col2:
