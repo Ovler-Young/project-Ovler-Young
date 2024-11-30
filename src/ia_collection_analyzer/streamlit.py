@@ -25,6 +25,8 @@ if "got_metadata" not in st.session_state:
     st.session_state.got_metadata = False
 if "items_pd" not in st.session_state:
     st.session_state.items_pd = None
+if "items_length" not in st.session_state:
+    st.session_state.items_length = 0
 if "progress_message" not in st.session_state:
     st.session_state.progress_message = None
 if "selected_columns" not in st.session_state:
@@ -121,6 +123,7 @@ def collection_input():
 
         # Update cache
         st.session_state.items_pd = items_pd
+        st.session_state.items_length = len(items_pd)
     else:
         st.markdown(f"Using cached metadata for collection: **{collection_id}**")
         items_pd = st.session_state.items_pd
@@ -181,6 +184,8 @@ def transform_data():
     if transform_needed == "No":
         return
 
+    selected_columns = st.session_state.selected_columns
+    items_length = st.session_state.items_length
     filtered_pd = st.session_state.filtered_pd
 
     st.header("Transform Column")
@@ -189,7 +194,7 @@ def transform_data():
     col1, col2 = st.columns([2, 3], vertical_alignment="bottom")
 
     with col1:
-        source_col = st.selectbox("Select column to transform:", filtered_pd.columns)
+        source_col = st.selectbox("Select column to transform:", selected_columns)
 
     with col2:
         transform_type = st.selectbox(
@@ -235,7 +240,7 @@ def transform_data():
             min_count = st.number_input(
                 "Minimum count per value:", min_value=1, value=100
             )
-            threshold = min_count / len(filtered_pd)
+            threshold = min_count / items_length
         else:
             ratio_map = {"1%": 0.01, "0.1%": 0.001, "0.01%": 0.0001}
             threshold = ratio_map[threshold_type]
@@ -357,8 +362,8 @@ def transform_data():
         preview_df = pd.DataFrame(
             {"Original": filtered_pd[source_col], "Transformed": new_col}
         )
-        st.write("Preview of first 10 rows:")
-        st.write(preview_df.head(10))
+        st.write("Preview of first 30 rows:")
+        st.write(preview_df.head(30).T)
 
         if st.button("Apply Transformation"):
             filtered_pd[source_col] = new_col
