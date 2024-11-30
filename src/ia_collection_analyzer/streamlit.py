@@ -172,6 +172,72 @@ def column_selector():
 
 
 @st.fragment
+def mapping_controls(formatted_values: list, value_counts: dict):
+    """Fragment for mapping source/target controls"""
+    col1, col2, col3 = st.columns([5, 3, 1], vertical_alignment="bottom")
+    with col1:
+        available_values = [
+            v for v in formatted_values if v not in st.session_state.used_values
+        ]
+        selected_sources = st.multiselect(
+            "Source Values:",
+            available_values,
+            placeholder="Choose values to map",
+            key="source_values",
+            default=[available_values[0]] if available_values else [],
+            on_change=None,
+        )
+
+    with col2:
+        available_targets = [
+            v for v in formatted_values if v not in st.session_state.used_values
+        ]
+        available_targets.append("Custom value...")
+        target_value = st.selectbox(
+            "Target Value:", available_targets, key="target_value"
+        )
+
+        if target_value == "Custom value...":
+            custom_target = st.text_input("Enter custom value:", key="custom_target")
+            target_value = f"{custom_target} (custom)"
+
+    with col3:
+        if st.button("Add", key="add_mapping"):
+            if target_value and selected_sources:
+                source_values = [s.split(" (")[0] for s in selected_sources]
+                target = target_value.split(" (")[0]
+                orig_count = sum(value_counts[s] for s in source_values)
+
+                st.session_state.mapping_table.append(
+                    {"sources": source_values, "target": target, "count": orig_count}
+                )
+                st.session_state.used_values.update(selected_sources)
+                st.rerun(scope="fragment")
+
+    if st.session_state.mapping_table:
+        st.write("Current Mappings:")
+        for mapping in st.session_state.mapping_table:
+            sources = " | ".join(mapping["sources"])
+            st.write(f"{sources} => {mapping['target']} (Count: {mapping['count']})")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Clear All Mappings", key="clear_mappings"):
+                st.session_state.mapping_table = []
+                st.session_state.used_values = set()
+                st.rerun(scope="fragment")
+        with col2:
+            if st.button("Revert Last Mapping", key="revert_mapping"):
+                last_mapping = st.session_state.mapping_table[-1]
+                last_sources = [
+                    f"{s} ({value_counts[s]})" for s in last_mapping["sources"]
+                ]
+                st.session_state.used_values.difference_update(last_sources)
+                st.session_state.mapping_table.pop()
+                st.rerun(scope="fragment")
+
+
+@st.fragment
 def transform_data():
     """Fragment for transforming data"""
     transform_needed = st.selectbox(
@@ -263,83 +329,7 @@ def transform_data():
         # Mapping interface
         st.subheader("Create Mapping")
         # Column layout for selector controls
-        col1, col2, col3 = st.columns([5, 3, 1], vertical_alignment="bottom")
-        with col1:
-            available_values = [
-                v for v in formatted_values if v not in st.session_state.used_values
-            ]
-            selected_sources = st.multiselect(
-                "Source Values:",
-                available_values,
-                placeholder="Choose values to map",
-                key="source_values",
-                default=[available_values[0]] if available_values else [],
-                on_change=None,
-            )
-
-        with col2:
-            available_targets = [
-                v for v in formatted_values if v not in st.session_state.used_values
-            ]
-            available_targets.append("Custom value...")
-
-            target_value = st.selectbox(
-                "Target Value:", available_targets, key="target_value"
-            )
-
-            if target_value == "Custom value...":
-                custom_target = st.text_input(
-                    "Enter custom value:", key="custom_target"
-                )
-                target_value = f"{custom_target} (custom)"
-
-        with col3:
-            if st.button("Add", key="add_mapping"):
-                if target_value and selected_sources:
-                    source_values = [s.split(" (")[0] for s in selected_sources]
-                    target = target_value.split(" (")[0]
-
-                    # Calculate counts
-                    orig_count = sum(value_counts[s] for s in source_values)
-
-                    st.session_state.mapping_table.append(
-                        {
-                            "sources": source_values,
-                            "target": target,
-                            "count": orig_count,
-                        }
-                    )
-                    st.session_state.used_values.update(selected_sources)
-
-                    st.rerun(scope="fragment")
-
-        # Display mappings with counts
-        if st.session_state.mapping_table:
-            st.write("Current Mappings:")
-            for mapping in st.session_state.mapping_table:
-                sources = " | ".join(mapping["sources"])
-                st.write(
-                    f"{sources} => {mapping['target']} (Count: {mapping['count']})"
-                )
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Clear All Mappings", key="clear_mappings"):
-                    st.session_state.mapping_table = []
-                    st.session_state.used_values = set()
-                    st.rerun(scope="fragment")
-            with col2:
-                if st.button("Revert Last Mapping", key="revert_mapping"):
-                    # Remove values from used_values set
-                    last_mapping = st.session_state.mapping_table[-1]
-                    last_sources = [
-                        f"{s} ({value_counts[s]})" for s in last_mapping["sources"]
-                    ]
-                    st.session_state.used_values.difference_update(last_sources)
-
-                    # Remove last mapping
-                    st.session_state.mapping_table.pop()
-                    st.rerun(scope="fragment")
+        mapping_controls(formatted_values, value_counts)
 
     elif transform_type == "Numeric Bins":
         num_bins = st.number_input("Number of bins:", min_value=2, value=5)
