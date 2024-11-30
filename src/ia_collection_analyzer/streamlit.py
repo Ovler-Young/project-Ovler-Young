@@ -78,9 +78,10 @@ if not st.session_state.got_metadata or collection_id != st.session_state.collec
     data_transform_text.text("calculating metadata...")
     items_pd["addeddate"] = pd.to_datetime(items_pd["addeddate"])
     items_pd["publicdate"] = pd.to_datetime(items_pd["publicdate"])
-    if "year" not in items_pd.columns:
-        data_transform_text.text("adding year column...")
-        items_pd["year"] = items_pd["publicdate"].dt.year
+    # year and month should be recalculated
+    items_pd["year"] = items_pd["addeddate"].dt.year
+    items_pd["month"] = items_pd["addeddate"].dt.month
+    items_pd["day"] = items_pd["addeddate"].dt.day
     data_transform_text.text("Data transformation and cleaning complete!")
 
     # Update cache
