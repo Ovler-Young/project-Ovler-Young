@@ -141,8 +141,8 @@ with col3:
 if plot_button and x_axis != y_axis:
     st.write("Plotting the data...")
     st.write(f"X-axis: {x_axis}, Y-axis: {y_axis}")
-    
-    # if y_axis is hashable , plot 
+
+    # if y_axis is hashable , plot
     if isinstance(filtered_pd[y_axis].iloc[0], (int, float, np.int64, np.float64)):
         # Create comprehensive aggregation table
         all_metrics = (
@@ -170,33 +170,32 @@ if plot_button and x_axis != y_axis:
         st.line_chart(metrics_for_plot)
 
         st.write(all_metrics)
-    
+
     # if y_axis is not numeric, count and plot
     else:
         st.write("Analyzing distribution across categories...")
-        
+
         # Create mask for list and non-list values
         is_list_mask = filtered_pd[y_axis].apply(lambda x: isinstance(x, list))
-        
+
         # Handle list values
         list_data = filtered_pd[is_list_mask][[x_axis, y_axis]].copy()
         exploded_list = list_data.explode(y_axis)
-        
-        # Handle non-list values 
+
+        # Handle non-list values
         non_list_data = filtered_pd[~is_list_mask][[x_axis, y_axis]]
-        
+
         # Combine results efficiently
         expanded_df = pd.concat([exploded_list, non_list_data])
-        
+
         # Create pivot table and plot
-        pivot_table = pd.crosstab(
-            expanded_df[x_axis], 
-            expanded_df[y_axis],
-            normalize='index'
-        ) * 100
+        pivot_table = (
+            pd.crosstab(expanded_df[x_axis], expanded_df[y_axis], normalize="index")
+            * 100
+        )
 
         st.bar_chart(pivot_table)
-        
+
         st.write("Distribution counts:")
         counts_df = pd.crosstab(expanded_df[x_axis], expanded_df[y_axis])
         st.write(counts_df)
