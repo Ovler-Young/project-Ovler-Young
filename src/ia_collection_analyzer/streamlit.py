@@ -210,7 +210,7 @@ def transform_data():
         st.subheader("Grouping Settings")
         threshold_type = st.selectbox(
             "Group rare values threshold:",
-            ["1%", "0.1%", "0.01%", "Custom ratio", "Minimum count"],
+            ["Minimum count", "1%", "0.1%", "0.01%", "Custom ratio"],
             index=1,
         )
 
@@ -220,11 +220,12 @@ def transform_data():
                 min_value=0.0,
                 max_value=1.0,
                 value=0.001,
+                step=0.000001,
             )
             threshold = ratio
         elif threshold_type == "Minimum count":
             min_count = st.number_input(
-                "Minimum count per value:", min_value=1, value=10
+                "Minimum count per value:", min_value=1, value=100
             )
             threshold = min_count / len(filtered_pd)
         else:
