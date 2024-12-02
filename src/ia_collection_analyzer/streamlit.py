@@ -377,13 +377,13 @@ def transform_data():
                     str_val = str(x)  # Convert full list to string for matching
                     if str_val in mapping_dict:
                         return mapping_dict[str_val]
-                    
+
                     # Try mapping individual elements
                     mapped = [mapping_dict.get(item, item) for item in x]
                     return mapped
                 else:
                     return mapping_dict.get(x, x)
-            
+
             # Create mapping dictionary
             mapping_dict = {}
             for m in st.session_state.mapping_table:
@@ -396,13 +396,13 @@ def transform_data():
                             mapping_dict[eval(source)] = m["target"]
                         except:
                             pass
-            
+
             # Apply mapping with list handling
             new_col = filtered_pd[source_col].map(safe_map)
 
             # Show preview
             preview_rows = []
-            
+
             # Get samples for each mapping
             for mapping in st.session_state.mapping_table:
                 # For each source value in the mapping
@@ -422,7 +422,7 @@ def transform_data():
             )
             if not unmatched.empty:
                 preview_rows.append(unmatched)
-                
+
             # Combine samples
             preview_df = pd.concat(preview_rows)
             preview_df = pd.DataFrame(
@@ -431,7 +431,7 @@ def transform_data():
                     "Transformed": preview_df[source_col].map(safe_map),
                 }
             )
-            
+
             st.write("Preview showing examples of each mapping:")
             st.write(preview_df.T)
 
