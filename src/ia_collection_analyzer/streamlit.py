@@ -369,9 +369,35 @@ def transform_data():
         elif transform_type == "Numeric Bins":
             new_col = pd.qcut(filtered_pd[source_col], num_bins, labels=False)
         elif transform_type == "Value Mapping":
-            new_col = filtered_pd[source_col].copy()
-            for mapping in st.session_state.mapping_table:
-                new_col = new_col.replace(mapping["sources"], mapping["target"])
+            def safe_map(x):
+                # Convert list to tuple for mapping since lists are unhashable
+                if isinstance(x, list):
+                    # Check if entire list matches any source
+                    str_val = str(x)  # Convert full list to string for matching
+                    if str_val in mapping_dict:
+                        return mapping_dict[str_val]
+                    
+                    # Try mapping individual elements
+                    mapped = [mapping_dict.get(item, item) for item in x]
+                    return mapped
+                else:
+                    return mapping_dict.get(x, x)
+            
+            # Create mapping dictionary
+            mapping_dict = {}
+            for m in st.session_state.mapping_table:
+                for source in m["sources"]:
+                    # Handle both string representations of lists and regular values
+                    mapping_dict[source] = m["target"]
+                    if source.startswith('[') and source.endswith(']'):
+                        # Also add the actual list/string version
+                        try:
+                            mapping_dict[eval(source)] = m["target"]
+                        except:
+                            pass
+            
+            # Apply mapping with list handling
+            new_col = filtered_pd[source_col].map(safe_map)
 
         # Show preview
         preview_df = pd.DataFrame(
