@@ -412,7 +412,7 @@ def transform_data():
                     )
                     if not matching_rows.empty:
                         preview_rows.append(matching_rows)
-                        
+
             # Get some unmatched samples too
             mapped_values = {
                 s for m in st.session_state.mapping_table for s in m["sources"]
@@ -427,7 +427,7 @@ def transform_data():
             preview_df = pd.concat(preview_rows)
             preview_df = pd.DataFrame(
                 {
-                "Original": preview_df[source_col], 
+                    "Original": preview_df[source_col],
                     "Transformed": preview_df[source_col].map(safe_map),
                 }
             )
