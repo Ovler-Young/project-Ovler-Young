@@ -369,6 +369,7 @@ def transform_data():
         elif transform_type == "Numeric Bins":
             new_col = pd.qcut(filtered_pd[source_col], num_bins, labels=False)
         elif transform_type == "Value Mapping":
+
             def safe_map(x):
                 # Convert list to tuple for mapping since lists are unhashable
                 if isinstance(x, list):
@@ -389,7 +390,7 @@ def transform_data():
                 for source in m["sources"]:
                     # Handle both string representations of lists and regular values
                     mapping_dict[source] = m["target"]
-                    if source.startswith('[') and source.endswith(']'):
+                    if source.startswith("[") and source.endswith("]"):
                         # Also add the actual list/string version
                         try:
                             mapping_dict[eval(source)] = m["target"]
@@ -405,23 +406,31 @@ def transform_data():
             # Get samples for each mapping
             for mapping in st.session_state.mapping_table:
                 # For each source value in the mapping
-                for source in mapping['sources']:
-                    matching_rows = filtered_pd[filtered_pd[source_col] == source].head(3)
+                for source in mapping["sources"]:
+                    matching_rows = filtered_pd[filtered_pd[source_col] == source].head(
+                        1
+                    )
                     if not matching_rows.empty:
                         preview_rows.append(matching_rows)
                         
             # Get some unmatched samples too
-            mapped_values = {s for m in st.session_state.mapping_table for s in m['sources']}
-            unmatched = filtered_pd[~filtered_pd[source_col].isin(mapped_values)].head(1)
+            mapped_values = {
+                s for m in st.session_state.mapping_table for s in m["sources"]
+            }
+            unmatched = filtered_pd[~filtered_pd[source_col].isin(mapped_values)].head(
+                1
+            )
             if not unmatched.empty:
                 preview_rows.append(unmatched)
                 
             # Combine samples
             preview_df = pd.concat(preview_rows)
-            preview_df = pd.DataFrame({
+            preview_df = pd.DataFrame(
+                {
                 "Original": preview_df[source_col], 
-                "Transformed": preview_df[source_col].map(safe_map)
-            })
+                    "Transformed": preview_df[source_col].map(safe_map),
+                }
+            )
             
             st.write("Preview showing examples of each mapping:")
             st.write(preview_df.T)
