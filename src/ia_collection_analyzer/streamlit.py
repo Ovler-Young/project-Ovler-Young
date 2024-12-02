@@ -399,16 +399,39 @@ def transform_data():
             # Apply mapping with list handling
             new_col = filtered_pd[source_col].map(safe_map)
 
-        # Show preview
-        preview_df = pd.DataFrame(
-            {"Original": filtered_pd[source_col], "Transformed": new_col}
-        )
-        st.write("Preview of first 30 rows:")
-        st.write(preview_df.head(30).T)
+            # Show preview
+            preview_rows = []
+            
+            # Get samples for each mapping
+            for mapping in st.session_state.mapping_table:
+                # For each source value in the mapping
+                for source in mapping['sources']:
+                    matching_rows = filtered_pd[filtered_pd[source_col] == source].head(3)
+                    if not matching_rows.empty:
+                        preview_rows.append(matching_rows)
+                        
+            # Get some unmatched samples too
+            mapped_values = {s for m in st.session_state.mapping_table for s in m['sources']}
+            unmatched = filtered_pd[~filtered_pd[source_col].isin(mapped_values)].head(1)
+            if not unmatched.empty:
+                preview_rows.append(unmatched)
+                
+            # Combine samples
+            preview_df = pd.concat(preview_rows)
+            preview_df = pd.DataFrame({
+                "Original": preview_df[source_col], 
+                "Transformed": preview_df[source_col].map(safe_map)
+            })
+            
+            st.write("Preview showing examples of each mapping:")
+            st.write(preview_df.T)
 
         if st.button("Apply Transformation"):
-            filtered_pd[source_col] = new_col
-            st.session_state.filtered_pd = filtered_pd
+            st.session_state.transformed_data = {
+                "source_col": source_col,
+                "transform_type": transform_type,
+                "new_col": new_col,
+            }
             st.session_state.transformed_columns.append(source_col)
             st.session_state.transform_history.append(
                 {"source_col": source_col, "transform_type": transform_type}
