@@ -217,7 +217,7 @@ def mapping_controls(formatted_values: list, value_counts: dict):
     if st.session_state.mapping_table:
         st.write("Current Mappings:")
         for mapping in st.session_state.mapping_table:
-            sources = " | ".join(mapping["sources"])
+            sources = " | ".join(str(s) for s in mapping["sources"])
             st.write(f"{sources} => {mapping['target']} (Count: {mapping['count']})")
 
         col1, col2 = st.columns(2)
@@ -319,9 +319,34 @@ def transform_data():
         main_values = value_counts[value_counts >= threshold * total_count]
 
         if not small_values.empty:
-            main_values["Others (values < " + str(threshold * 100) + "%)"] = (
-                small_values.sum()
-            )
+            small_values_series = value_counts[value_counts < threshold * total_count]
+            small_values_list = small_values_series.index.tolist()
+            small_values_sum = small_values_series.sum()
+
+            small_values_list = [str(x) for x in small_values_series.index.tolist()]
+
+            others_added = False
+            for mapping in st.session_state.mapping_table:
+                if mapping["target"] == "Others":
+                    # Convert sources to set of strings for comparison
+                    mapping_sources = set(str(s) for s in mapping["sources"])
+                    small_values_set = set(small_values_list)
+                    if mapping_sources != small_values_set:
+                        st.session_state.mapping_table.remove(mapping)
+                        break
+                    else:
+                        others_added = True
+                        break
+
+            if not others_added:
+                st.session_state.mapping_table.insert(
+                    0,
+                    {
+                        "sources": small_values_list,
+                        "target": "Others",
+                        "count": small_values_sum,
+                    },
+                )
 
         # Format values for display
         formatted_values = [f"{v} ({c})" for v, c in main_values.items()]
