@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from ia_collection_analyzer.getmetadatas import fetch_metadata
-from ia_collection_analyzer.constdatas import REQUIRED_METADATA
-from ia_collection_analyzer.pdhelper import normalize_list_columns
+from .getmetadatas import fetch_metadata
+from .constdatas import REQUIRED_METADATA
+from .pdhelper import normalize_list_columns
 
 st.title("Internet Archive Collection Analyzer")
 
